@@ -47,8 +47,8 @@
 	<tbody id="tbody">
 	{% for board in boards %}
 	<tr>
-		<td>{{board.id}}</td>
-		<td>{{board.title}}</td>
+		<td>{{forloop.counter}}</td>
+		<td><a href="../view?id={{board.id}}">{{board.title}}</a></td>
 		<td>{{board.writer.user_id}}</td>
 		<td>{{board.regdate}}</td>
 		<td>{{board.viewcnt}}</td>
