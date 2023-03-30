@@ -1,11 +1,25 @@
 from django.shortcuts import render, redirect
-
+from django.http import JsonResponse
 from .models import *
+
+from django.core.paginator import Paginator
 # Create your views here.
 # M(Model) - data
 
 def main(request):
     print(">>>>>DEBUG , client path: /index, main() call, render /board/index.html")
+
+    if request.session.get('session_user_id') :
+        print('>>>>>> debug, session exits')
+        context = {}
+        context['name'] = request.session['session_name']
+        context['img'] = request.session['session_img']
+        context['user_id'] = request.session['session_user_id']
+
+        return render(request , 'board/main.html',context)
+    # else :
+    #     print('>>> debug, session not')
+
     return render(request , 'board/index.html')
 
 def login(request):
@@ -47,7 +61,13 @@ def list(request):
     boards = board_tbl.objects.all().order_by('-id')
     print(">>>>debug, result , type = ", boards, type(boards))
 
-    context = {'boards': boards }
+    paginator = Paginator(boards, 2)
+    page = int(request.GET.get('page',1))
+    board_list = paginator.get_page(page)
+
+
+
+    context = {'boards': board_list }
 
     # 세션유지를 위해서 다시한번 심는 작업이 필요함.
     context['name'] = request.session['session_name']
@@ -119,6 +139,9 @@ def read(request):
     #boards = board_tbl.objects.all()
     board = board_tbl.objects.get(id=id)
     #print(">>>>debug, result , type = ", board, type(board))
+    #ORM : update board_tbl set viewcnt =viewcont +1 where id=?
+    board.viewcnt = board.viewcnt +1
+    board.save()
 
     context = {'board': board}
 
@@ -130,24 +153,27 @@ def read(request):
 
     return render(request, 'board/read.html', context)
 
+# def delete(request):
+#     #print('>>>>Debug')
+#     id = request.GET.get('id')
+#     # ORM : select * from board_tbl where id =?
+#     # boards = board_tbl.objects.all()
+#     board = board_tbl.objects.get(id=id)
+#     # print(">>>>debug, result , type = ", board, type(board))
+#
+#     context = {'board': board}
+#     board_tbl(id= id).delete()
+#
+#     # 세션유지를 위해서 다시한번 심는 작업이 필요함.
+#     context['name'] = request.session['session_name']
+#     context['img'] = request.session['session_img']
+#     context['user_id'] = request.session['session_user_id']
+#
+#     return redirect('list')
 def delete(request):
-    #print('>>>>Debug')
     id = request.GET.get('id')
-    # ORM : select * from board_tbl where id =?
-    # boards = board_tbl.objects.all()
-    board = board_tbl.objects.get(id=id)
-    # print(">>>>debug, result , type = ", board, type(board))
-
-    context = {'board': board}
-    board_tbl(id= id).delete()
-
-    # 세션유지를 위해서 다시한번 심는 작업이 필요함.
-    context['name'] = request.session['session_name']
-    context['img'] = request.session['session_img']
-    context['user_id'] = request.session['session_user_id']
-
+    board_tbl.objects.get(id=id).delete()
     return redirect('list')
-
 # def update(request):
 #
 #     id = request.GET.get('id')
@@ -167,21 +193,54 @@ def delete(request):
 #
 #     return render(request, 'board/update.html', context)
 #
-# def updatesave(request):
-#     id = request.GET.get('id')
-#
-#     #board = board_tbl.objects.get(id=id)
-#     title = 'title' in request.POST
-#     writer = 'writer' in request.POST
-#     content = 'content' in request.POST
-#
-#     board_tbl(id=id,title=title, writer=user_tbl.objects.get(user_id=writer), content=content).save()
-#
-#     context = { }
-#     # 세션유지를 위해서 다시한번 심는 작업이 필요함.
-#     context['name'] = request.session['session_name']
-#     context['img'] = request.session['session_img']
-#     context['user_id'] = request.session['session_user_id']
-#
-#
-#     return redirect('list')
+def update(request):
+   id = request.GET.get('id')
+   title = request.GET.get('title')
+   content = request.GET.get('content')
+   # ORM
+   # select * from board_tbl where id =?
+   # update board_tbl set title= ? and content =? where=id?
+   board =board_tbl.objects.get(id=id)
+   board.title = title
+   board.content = content
+   board.save()
+   return redirect('list')
+
+def logout(request):
+    request.session['session_name'] = {}
+    request.session['session_img'] = {}
+    request.session['session_user_id'] ={}
+
+    return redirect('index')
+
+def search(request) :
+    print('>>>>>>> debug, client path :/search , search() call(), ajax JsonResponse')
+    type = request.POST.get('searchType')
+    keyword = request.POST.get('searchKeyword')
+    print('debug>>>>>> params', type , keyword)
+
+    # ORM - searchType(title, writer)
+    # where title = ?, writer =?
+    # like %keyword%, %keyword, keyword%
+    # filter( xxxx__icontains, xxxx__endswith, xxxx__startswith)
+    if type == 'title' :
+         # select * from table where title like '%keyword%'
+        boards = board_tbl.objects.filter(title__icontains=keyword)
+    elif type == 'writer' :
+        # select * from table where writer like '%keyword%'
+        boards = board_tbl.objects.filter(writer_id=keyword)
+
+    # QyerySet[<object>,<object> .......]
+    print('>>>>debug , result len =', len(boards))
+    response_json=[]
+    for board in boards :
+        response_json.append({
+            'id'       : board.id,
+            'title'    : board.title,
+            'writer'   : board.writer.user_id,
+            'regdate'  : board.regdate,
+            'viewcnt'  : board.viewcnt
+
+        })
+    print('>>>>>>>> json data =', response_json)
+    return JsonResponse(response_json, safe=False)

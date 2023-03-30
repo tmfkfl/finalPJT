@@ -56,7 +56,7 @@
 			</div>
 			<div class="box-body">
 				<label for="writer">Writer</label>
-				<input type="text" class="form-control" id="time_writer" value="ooo" readonly/>
+				<input type="text" class="form-control" id="time_writer" value="{{user_id}}" readonly/>
 				<label for="add_text">ADD Text</label>
 				<input type="text" class="form-control" id="time_txt"/>
 			</div>
@@ -85,6 +85,7 @@
 <script>
 				
 $(document).ready(function(){
+
 	$('#listBtn').click(function(){
 	     location.href= '../list/'
 	})
@@ -101,13 +102,43 @@ $(document).ready(function(){
 	})
 
 	$('#updateBtn').click(function(){
-	     var id = $('#id').val()
-	     alert(id)
-	     location.href= '../update/?id='+id
+         var caption = $('#updateBtn').text()
+         window.alert(caption)
+	     if( caption== '수정' ){
+	     //document.getElementById('title').readOnly = false;
+	     //document.getElementById('content').readOnly = false;
+	        $('#title').prop('readonly', false)
+	        $('#content').prop('readonly', false)
+	        $('#updateBtn').text('수정확인')
+
+	        var btn = "<button id='resetBtn' class='btn btn-info' onclick='javascript:resetBtn(this)'>수정취소</button>"
+	        $('.box-footer').append(btn)
+	     }
+	    if( caption == '수정확인'){
+	        var id = $('#id').val()
+	        var title = $('#title').val()
+	        var content = $('#content').val()
+	        location.href='../update?id='+$('#id').val()+'&title='+$('#title').val()+'&content='+ $('#content').val()
+	    }
+
 	})
 
+     $('#replyBtn').click(function(){
+         window.alert('reply click')
+         writer = $('#time_writer').val()
+         txt = $('#time_txt').val()
+         id  = $('#id').val()
+         window.alert('board id, writer , txt   ' +id+'     '+writer+'  '+txt)
+         //ajax 통신을 통해서 데이터 전달하여 테이블에 입력 후 전체 검색을 통해서 반환받은 데이터를 document 에 출력
+     })
 });
 
+function resetBtn(element){
+    $('#title').prop('readonly', true)
+	$('#content').prop('readonly', true)
+	$('#updateBtn').text('수정')
+	element.remove()
+}
 
 </script>
 

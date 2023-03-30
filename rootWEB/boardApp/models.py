@@ -31,3 +31,12 @@ class board_tbl(models.Model):
     content  = models.TextField()
     regdate  = models.DateTimeField(default=timezone.now)
     viewcnt  = models.IntegerField(default=0)
+
+class reply_tbl(models.Model):
+    # id (primary)
+    reply_writer  = models.CharField(max_length=500)
+    reply_txt     = models.CharField(max_length=500)
+    board_id      = models.ForeignKey(board_tbl,
+                                    on_delete=models.CASCADE ,
+                                    db_column='board_id',
+                                    null=False)
